@@ -1,9 +1,22 @@
 import { Hono } from "hono";
 import { createRequestHandler } from "react-router";
 
-const app = new Hono();
+const app = new Hono<{ Bindings: Env }>();
 
-// Add more routes here
+const api = new Hono<{ Bindings: Env }>();
+
+api.get("/health", (c) => {
+	return c.json({
+		status: "ok",
+		timestamp: new Date().toISOString(),
+	});
+});
+
+api.all("*", (c) => {
+	return c.json({ error: "Not Found" }, 404);
+});
+
+app.route("/api", api);
 
 app.get("*", (c) => {
 	const requestHandler = createRequestHandler(
@@ -12,7 +25,7 @@ app.get("*", (c) => {
 	);
 
 	return requestHandler(c.req.raw, {
-		cloudflare: { env: c.env, ctx: c.executionCtx },
+		cloudflare: { env: c.env, ctx: c.executionCtx as unknown as ExecutionContext },
 	});
 });
 
